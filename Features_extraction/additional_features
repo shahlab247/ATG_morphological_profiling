@@ -1,0 +1,97 @@
+# -*- coding: utf-8 -*-
+"""
+List of function to extract additional features such as Zernike moments and haralick 
+"""
+import numpy as np
+import mahotas
+from scipy import ndimage
+
+#cropping each cell using the bbox coordinates and extracting additional features such as zernike and haralick features. 
+#defining additional features
+def standard_deviation(regionmask, intensityimage):
+    return(float(np.std(intensityimage[regionmask])))
+
+def median(regionmask, intensityimage):
+    return(float(np.median(intensityimage[regionmask])))
+
+def quartiles(regionmask, intensityimage):
+    testing_types = []
+    testing_rmasks = []
+    testing_iims = []
+    testing_indxd = []
+    testing_types.append(intensityimage.dtype)
+    testing_rmasks.append(regionmask)
+    testing_iims.append(intensityimage)
+    testing_indxd.append(intensityimage[regionmask])
+    return(np.asarray(np.percentile(intensityimage[regionmask], q=(25, 50, 75)),dtype=np.float16))
+
+def integrated_intensity(regionmask, intensityimage):
+    return(float(np.sum(intensityimage[regionmask])))
+
+def zernike_moments(regionmask, intensityimage, radius):
+           
+    labeledimg= regionmask
+    #center of mass calculation
+    COM = ndimage.measurements.center_of_mass(intensityimage, labels = labeledimg)
+
+    # computing zernike moments
+    zm = mahotas.features.zernike_moments(intensityimage, radius, degree = 8, cm = COM)
+    z_moments={'Zernike_moment_1':zm[0],
+        'Zernike_moment_2':zm[1],
+        'Zernike_moment_3':zm[2],
+        'Zernike_moment_4':zm[3],
+        'Zernike_moment_5':zm[4],
+        'Zernike_moment_6':zm[5],
+        'Zernike_moment_7':zm[6],
+        'Zernike_moment_8':zm[7],
+        'Zernike_moment_9':zm[8],
+        'Zernike_moment_10':zm[9],
+        'Zernike_moment_11':zm[10],
+        'Zernike_moment_12':zm[11],
+        'Zernike_moment_13':zm[12],
+        'Zernike_moment_14':zm[13],
+        'Zernike_moment_15':zm[14],
+        'Zernike_moment_16':zm[15],
+        'Zernike_moment_17':zm[16],
+        'Zernike_moment_18':zm[17],
+        'Zernike_moment_19':zm[18],
+        'Zernike_moment_20':zm[19],
+        'Zernike_moment_21':zm[20],
+        'Zernike_moment_22':zm[21],
+        'Zernike_moment_23':zm[22],
+        'Zernike_moment_24':zm[23],
+        'Zernike_moment_25':zm[24]
+        }
+    return(z_moments)
+
+#Section for computing all non-rprops-friendly features
+def haralick_fun(intensityimage):
+           
+    meanfeats = []
+    rangelist = []
+    try:
+        hfeats = mahotas.features.haralick(intensityimage.astype(int), compute_14th_feature=True)
+        for i in range(0, 14):
+            templist = []
+            for j in range(0, 4):
+                templist.append(hfeats[j][i])
+            meanfeats.append(np.average(templist))
+            rangelist.append(np.max(templist) - np.min(templist)) 
+    except ValueError:
+        meanfeats=[np.nan]*14
+        rangelist=[np.nan]*14
+        
+    return meanfeats, rangelist
+
+def haralick_summary(imglist):
+    #Computing Haralick Features of individual puncta
+    f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14 = haralick_fun(imglist)[0]
+    har_tot = {"angularsecondmoment_mean":f1, "contrast_mean":f2, "correlation_mean":f3, "variance_mean":f4, "inversedifferentmoment_mean":f5,
+               "sumaverage_mean":f6, "sumvariance_mean":f7, "sumentropy_mean":f8, "entropy_mean":f9, "differencevariance_mean":f10,
+               "differenceentropy_mean":f11, "correlation1_mean":f12, "correlation2_mean":f13, "maxcorrelationcoeff_mean":f14}
+    f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14 = haralick_fun(imglist)[1]
+    har_range = {"angularsecondmoment_range":f1, "contrast_range":f2, "correlation_range":f3, "variance_range":f4, "inversedifferentmoment_range":f5,
+               "sumaverage_mean":f6, "sumvariance_mean":f7, "sumentropy_mean":f8, "entropy_mean":f9, "differencevariance_mean":f10,
+               "differenceentropy_range":f11, "correlation1_range":f12, "correlation2_range":f13, "maxcorrelationcoeff_range":f14}
+    har_tot.update(har_range)
+    return(har_tot)
