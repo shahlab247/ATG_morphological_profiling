@@ -1,0 +1,29 @@
+# -*- coding: utf-8 -*-
+"""
+#function for generating robut z scores. 
+#step-1:cheking nan values
+#step-2: normalise each plate/timepoint. 
+#remove outliers-not performed
+"""
+import pandas as pd
+
+
+#defining robust z score function
+def rzscore(df, treatment= 'Treatment',norm_fac='basal'):
+    basal=df[(df['Treatment']=='basal')].drop(columns=['Treatment'])
+    median_norm=basal.median() #median value of basal cells. 
+    mad_norm= basal.mad() #mean absolute deviation
+    #making sure the index is same
+    norm_z_score=[]
+    if mad_norm.index.equals(median_norm.index):
+        features_lst= list(median_norm.index)
+        for idx,f in enumerate(features_lst):
+            if mad_norm[idx]!=0:
+                norm_z_score.append(((df[f]-median_norm[idx])/(1.253314*mad_norm[idx]))) #1.253314 * mean absolute deviation= SD
+            else:
+                pass
+        df_norm_zscore=pd.DataFrame(pd.concat(norm_z_score,axis=1),columns=median_norm.index)
+        
+    else:
+        print('index dont match for median and MAD pd.series')
+    return df_norm_zscore
